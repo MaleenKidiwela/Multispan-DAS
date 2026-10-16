@@ -1,0 +1,13 @@
+# data and large outputs live on /data/wsd02/multispan_dvv (see README "Data")
+outputs/
+*.h5
+*.npy
+*.mseed
+*.part
+# keep the oceanic travel-time model
+*.npz
+!resources/taup/ocean6.npz
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+.DS_Store

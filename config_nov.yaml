@@ -1,0 +1,156 @@
+# November - December 2025 on the same channels as the 100-m stream (config_100m.yaml).
+# Archive "north"/"south" 8-Hz stream, Nov 6 - Dec 17 (outages Nov 12-18, Dec 8-9; power cut Dec 17-23):
+#   Nov 6-26  : downsampled_*.h5, 105.9 m, 7.45 Hz (from 29.8 Hz), gauge 256, no mask and no dx attribute
+#   Nov 26-Dec 2: raw binaries, 52.9 m, 7.45 Hz, gauge 128, mask attribute present but NOT applied (full fibre)
+#   Dec 2-17  : raw binaries, 52.9 m, masked
+# d05_stream_reduce.py cuts unmasked files to the 100-m stream mask (virtual_mask), low-passes and decimates
+# 52.9 m -> 105.9 m and 7.45 -> 1.86 Hz, and writes float16 "reduced" h5 files (strain rate) to data_dirs[0];
+# the standard steps (s01-s12, s20-s23, s32-s33) then run on those with MSDVV_CONFIG=config_nov.yaml.
+data_dirs:
+  - /data/wsd02/multispan_dvv/raw_nov/reduced
+file_glob: "*nokia_DAS_*_8Hz_*.h5"
+require: {dx: 105.85775068689657, fs: 1.8626451492309568}     # reduced files
+stream_require: {dx: [105.85775068689657, 52.92887534344828], fs: 7.450580596923827}   # archive files accepted
+dx_default: 105.85775068689657   # Nov downsampled h5 files carry no dx (readme: 105.9 m from Nov 5)
+virtual_mask:                    # = masks of the 100-m stream (m)
+  north: [[0.0, 110000.0], [170000.0, 200000.0], [275000.0, 300000.0]]
+  south: [[0.0, 150000.0], [200000.0, 240000.0], [255000.0, 300000.0], [310000.0, 350000.0]]
+target_fs: 1.8626451492309568
+regrid_drops: true      # raw files: dropped chunks -> zero gaps on the true time grid (Nov 6-26 h5 files have no chunk times)
+crossing_cutout:        # item 1: native 52.9-m cutouts around the Alvin Canyon (opt 282) and Daisy Bank (opt 303.5) crossings
+  cable: south
+  opt_km: [268.0, 312.0]
+  dir: /data/wsd02/multispan_dvv/raw_nov/crossings
+spatial:
+  target_dx: 105.85775068689657
+  k_lowpass: 4.5                 # 1/km, anti-alias for the 105.9 m grid (Nyquist 4.72/km)
+  native_filter: false           # 105.9 m files untouched, like the 100-m stream
+date_range: ["2025-11-06", "2025-12-22"]
+output_dir: /data/wsd02/multispan_dvv/outputs_nov
+resources_dir: /home/seismic/Multispan_DV/resources
+
+download:
+  streams: [north, south]
+  parallel: 6
+  batch_files: 8           # /data/wsd02 nearly full (78 GB free on 2026-10-15): keep temp downloads small
+geometry:
+  edge_pad: 6            # channels (~0.6 km) around joins / repeaters
+  repeater_search_km: 8
+
+noise:
+  win_s: 60
+  psd_seg_s: 600
+  max_offset_coh: 20
+  reject_mad: 5.0
+  n_files_per_cable: 24  # PSD/coherence from a spread sample of files
+
+xcorr:
+  win_s: 240
+  step_s: 120
+  maxlag_s: 90
+  nfft: 1024             # >= 2 x 447-sample windows at 1.86 Hz
+  prefilt: [0.08, 0.85]  # Nyquist 0.93 Hz
+  substack_s: 3600       # 1-h substacks (storage)
+  k_min: 2               # 0.21 km
+  k_max: 30              # 3.2 km
+  k_step: 2              # same offsets in km as the pilot (0.42 km steps)
+  good_pairs_only: true  # zero pairs with a bad channel (needs s05 first)
+  n_jobs: 12
+  remove_common_mode: false
+  whiten_taper_hz: 0.03
+  bands:
+    b1: [0.12, 0.30]
+    b2: [0.30, 0.70]
+
+quality:
+  band: [0.12, 0.60]
+  k: 4                   # 0.42 km, the pilot's calibrated offset
+  coh_min: 0.15
+
+convergence:
+  ref_exclude: segment            # reference = all data except the tested segment
+  T_subs: [1, 3, 6, 12, 24, 48, 96, 168]   # hours (up to one week)
+  print_T_min: [360, 1440, 10080]
+  pair_subsample: 4               # pair level: every 4th good source channel (memory)
+  fix_T_subs: 24
+  n_jobs: 8
+
+dvv:
+  dv_range: 0.01
+  nbtrial: 101
+  coda_start_mult: 2.0
+  min_coda_s: {b1: 15.0, b2: 10.0}
+  coda_end_s: {b1: 80.0, b2: 60.0}
+  v_direct: 0.3
+  v_fast: 3.0
+  direct_min_s: 1.0
+  t_direct_min_s: 5.0
+  early_coda_mult: 2.5
+  windows: [direct, early, coda]
+  primary_window: coda           # day-scale stacks: test whether the late coda becomes usable
+  stack_subs: 6                  # 6-h stacks ...
+  step_subs: 1                   # ... moving by 1 h
+  levels: [2km, 5km]
+  wcc_level: 5km
+  cc_min: 0.5
+  bin_km: [1, 2, 5]
+  dvv_substack_min: 360
+  merge_runs: true               # one continuous hourly series per cable
+  n_chunks: 6
+  n_jobs: 24
+  n_jobs_ref: 4
+
+tides:
+  noaa_station: "9435380"
+
+# Inter-span (cross-feature) bin-to-bin correlations, south cable (s20-s22)
+interspan:
+  cable: south
+  bin_km: 1.0
+  min_good: 3
+  min_km: 5.0
+  features_geojson: resources/qfaults_oregon_margin_strikeslip.geojson
+  points: {SHR: [44.569, -125.148, 5.0]}   # Southern Hydrate Ridge summit (approx.), radius km
+  win_s: 600
+  step_s: 300
+  maxlag_s: 200
+  nfft: 2048
+  prefilt: [0.08, 0.85]
+  whiten_taper_hz: 0.03
+  substack_s: 3600
+  bands:
+    b1: [0.12, 0.30]
+    b2: [0.30, 0.70]
+  n_jobs: 8
+
+# Improved inter-span run (v2): common-mode removal, lower band, tonal-bin rejection, weekly stacks
+interspan_v2:
+  out_subdir: interspan_v2
+  remove_common_mode: true
+  prefilt: [0.04, 0.85]
+  bands:
+    b0: [0.06, 0.15]
+    b1: [0.12, 0.30]
+    b2: [0.30, 0.70]
+  stacks_h: [[24, 6], [168, 24]]   # (stack length, step) in hours
+  tonal_peakiness_factor: 3.0      # bins whose pairs' long-term spectra are this much peakier than typical are dropped
+
+# v3: like v1 (no common-mode subtraction, which injects a zero-lag term) plus the low band; used for the
+# stable across-feature dv/v time series (s23)
+interspan_v3:
+  out_subdir: interspan_v3
+  remove_common_mode: false
+  prefilt: [0.04, 0.85]
+  bands:
+    b0: [0.06, 0.15]
+    b1: [0.12, 0.30]
+  exclude_segs: [C3]               # 2-bin sliver before repeater 3: tonal
+  stacks_h: [[24, 1], [168, 6]]   # back-stacked; daily stepping 1 h (matches within-span), weekly stepping 6 h
+
+# 24-h stacks moving 1 h (stable daily dv/v, hourly sampling). Use: MSDVV_DVV=dvv_24h
+dvv_24h:
+  out_subdir: dvv_24h
+  stack_subs: 24
+  step_subs: 1
+
+storms: ["2025-12-25 12:00", "2026-01-03 06:00", "2026-01-08 06:00"]   # storm onsets (NDBC Hs rises)

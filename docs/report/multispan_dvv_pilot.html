@@ -1,0 +1,177 @@
+<title>Multispan DAS dv/v Pilot</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,500;6..72,600&family=Public+Sans:wght@400;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: single reading column (~70ch) with full-bleed figure rows; summary verdict first, then evidence in pipeline order. */
+:root {
+  --bg: #f5f8f9; --surface: #ffffff; --fg: #142027; --muted: #536570; --rule: #d3dde2;
+  --accent: #0b6a77; --accent-soft: #e0eff1; --good: #23784a; --warn: #9a6a00; --bad: #a33a2e;
+  --display: "Newsreader", "Iowan Old Style", Georgia, serif;
+  --body: "Public Sans", "Segoe UI", system-ui, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0d1518; --surface: #131e22; --fg: #dce7eb; --muted: #93a6ae; --rule: #263840;
+  --accent: #5cc0cc; --accent-soft: #15333a; --good: #6cc792; --warn: #e0b453; --bad: #f08a7c; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #0d1518; --surface: #131e22; --fg: #dce7eb; --muted: #93a6ae; --rule: #263840;
+  --accent: #5cc0cc; --accent-soft: #15333a; --good: #6cc792; --warn: #e0b453; --bad: #f08a7c; color-scheme: dark }
+body { background: var(--bg); color: var(--fg); font: 16px/1.6 var(--body); }
+.wrap { max-width: 1100px; margin: 0 auto; padding-inline: 20px; padding-block: 40px 72px; display: grid; gap: 44px; }
+.col { max-width: 70ch; }
+header { display: grid; gap: 10px; }
+.eyebrow { font: 500 12px/1.4 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--accent); }
+h1 { font: 600 clamp(30px, 5vw, 44px)/1.1 var(--display); margin: 0; text-wrap: balance; }
+h2 { font: 600 26px/1.2 var(--display); margin: 0 0 12px; text-wrap: balance; }
+h3 { font: 600 15px/1.3 var(--body); margin: 18px 0 6px; }
+p { margin: 0 0 12px; }
+.lede { font-size: 18px; color: var(--muted); max-width: 70ch; }
+.meta { font: 13px/1.5 var(--mono); color: var(--muted); }
+section { display: grid; gap: 14px; }
+.verdict { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 14px; }
+.v { background: var(--surface); border: 1px solid var(--rule); border-radius: 6px; padding: 16px 18px; display: grid; gap: 6px; align-content: start; min-width: 0; }
+.v .tag { font: 600 11px/1 var(--mono); letter-spacing: .08em; text-transform: uppercase; }
+.v.ok .tag { color: var(--good); } .v.partial .tag { color: var(--warn); } .v.no .tag { color: var(--bad); }
+.v b { font: 600 17px/1.3 var(--display); }
+.v p { margin: 0; font-size: 14.5px; color: var(--muted); }
+figure { margin: 0; display: grid; gap: 8px; }
+figure img { width: 100%; height: auto; border: 1px solid var(--rule); border-radius: 4px; background: #fff; }
+figcaption { font-size: 14px; color: var(--muted); max-width: 90ch; }
+.tbl { overflow-x: auto; border: 1px solid var(--rule); border-radius: 6px; background: var(--surface); }
+table { border-collapse: collapse; width: 100%; font-size: 14px; font-variant-numeric: tabular-nums; }
+th, td { padding: 7px 12px; text-align: left; border-bottom: 1px solid var(--rule); white-space: nowrap; }
+th { font: 600 12px/1.3 var(--mono); letter-spacing: .04em; color: var(--muted); text-transform: uppercase; }
+tr:last-child td { border-bottom: 0; }
+td.num { text-align: right; font-family: var(--mono); }
+code { font: 0.9em var(--mono); background: var(--accent-soft); padding: 1px 5px; border-radius: 3px; }
+ul { margin: 0 0 12px; padding-left: 20px; display: grid; gap: 6px; }
+a { color: var(--accent); }
+a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.two { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px; }
+.two > * { min-width: 0; }
+hr { border: 0; border-top: 1px solid var(--rule); margin: 0; }
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">OOI Regional Cabled Array · Nokia multispan DAS · January 2026</div>
+    <h1>Multispan DAS dv/v pilot</h1>
+    <p class="lede">Can short-offset ambient-noise interferometry measure seismic velocity change across repeater spans on the north and south RCA cables, using the snapshot data on hand (25.1 h north, 13.2 h south)?</p>
+    <div class="meta">Data: /data/whd02/arose_data/multispan_8hz · Code: /home/seismic/Multispan_DV · 7.45 Hz, 211.7 m channels, gauge ≈ 209 m</div>
+  </header>
+
+  <section>
+    <h2>Short answer</h2>
+    <div class="verdict">
+      <div class="v ok"><span class="tag">Works</span><b>Stable correlations past every imaged repeater</b><p>Direct Scholte waves (≈0.3 km/s) converge to CC ≥ 0.9 within 10–30 min on most spans with 1–5 km spatial stacks.</p></div>
+      <div class="v partial"><span class="tag">Limited</span><b>dv/v precision is 0.04–0.2 % per 30 min</b><p>Span-averaged, early-coda window, 0.3–0.7 Hz. Per 5-km bin it is 0.1–0.4 %. Too coarse for tidal loading.</p></div>
+      <div class="v no"><span class="tag">Not yet</span><b>Late coda needs longer records</b><p>Coda beyond 15 s reaches only CC 0.1–0.5 after 60 min. Day-long stacks from the continuous archive are the fix.</p></div>
+    </div>
+  </section>
+
+  <section class="col">
+    <h2>Data and spans</h2>
+    <p>The <code>masked</code> attribute lists the optical-distance intervals that were kept. They are concatenated in the array. Repeaters appear in the data as a one-channel amplitude spike followed by a drop. Pinning those to the published repeater coordinates gives route ≈ 0.963 × optical distance on the north cable and 0.980 × optical − 1.9 km on the south cable.</p>
+  </section>
+  <div class="tbl">
+    <table>
+      <thead><tr><th>Cable</th><th>Kept block (optical km)</th><th>Repeater span</th><th>Depth (m)</th><th class="num">Good channels</th></tr></thead>
+      <tbody>
+        <tr><td>North</td><td>A · 0–110</td><td>1 (to 67 km), 2</td><td>0 → 1860</td><td class="num">322 / 519</td></tr>
+        <tr><td>North</td><td>B · 170–200</td><td>3 (past repeater at 172 km)</td><td>2510 → 2640</td><td class="num">110 / 142</td></tr>
+        <tr><td>North</td><td>C · 275–300</td><td>4 (past repeater at 277 km)</td><td>2800 → 2850</td><td class="num">79 / 118</td></tr>
+        <tr><td>South</td><td>A · 0–150</td><td>1 (to 98 km), 2</td><td>5 → 2770</td><td class="num">214 / 708</td></tr>
+        <tr><td>South</td><td>B · 200–240</td><td>3 (past repeater at 206 km)</td><td>2900 → 1240</td><td class="num">67 / 189</td></tr>
+        <tr><td>South</td><td>C · 255–300</td><td>4 (past repeater at 258 km)</td><td>830 → 270</td><td class="num">62 / 212</td></tr>
+        <tr><td>South</td><td>D · 310–350</td><td>4, continued</td><td>260 → 90</td><td class="num">44 / 189</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <figure>
+    <img src="figs/geometry.png" alt="Median amplitude along each cable with picked repeaters, and channel locations on a map coloured by depth">
+    <figcaption>Repeater picks (red lines, top) and the resulting channel locations (bottom). Repeater picks are marked with x on the published repeater positions.</figcaption>
+  </figure>
+
+  <section class="col">
+    <h2>Noise and channel quality</h2>
+    <p>Coherent energy lies only between 0.12 and 0.7 Hz, in the secondary microseism and dispersive Scholte waves. Above 0.7 Hz neighbouring channels 0.2 km apart are incoherent. Removing the common mode made no measurable difference.</p>
+    <p>A channel counts as physical when its median coherence with the channel two positions away is at least 0.15. The readme's examples on the south cable come out right: 258–260 km is bad, 261–263 and 265–268 km are good, and beyond 290 km is bad. Coherence is highest just past each repeater and decays along the span. The shallow first ~20 km is also incoherent, probably because slow ocean-wave energy is aliased at 212 m spacing.</p>
+  </section>
+  <figure>
+    <img src="figs/channel_quality.png" alt="Coherence at 2-channel offset versus optical distance for both cables, with good channels in green and bad in red">
+    <figcaption>Physical (green) vs non-physical (red) channels. Dashed lines are repeaters. Across both cables, 66 % of north and 30 % of south channels pass.</figcaption>
+  </figure>
+  <div class="two">
+    <figure>
+      <img src="figs/fk_north.png" alt="Frequency-wavenumber spectra for the three north-cable blocks">
+      <figcaption>f–k spectra (north). Dispersive branches near 0.3 km/s from 0.2 to 1 Hz, and a horizontal microseism band near 0.18 Hz.</figcaption>
+    </figure>
+    <figure>
+      <img src="figs/gathers_north_all.png" alt="All-January cross-correlation gathers, offset versus lag, for the north blocks and two bands">
+      <figcaption>All-January reference gathers (north), with offsets 0.4–3.2 km. The move-out is physical and largely one-sided, reflecting directional noise.</figcaption>
+    </figure>
+  </div>
+
+  <section class="col">
+    <h2>Convergence</h2>
+    <p>Each 10–120-min stack is compared with a reference built from all January runs except the one being tested, for single pairs and for 1, 2 and 5 km spatial stacks. Stacking nearby channels helps most for single pairs: on north span A1 at 30 min, CC rises from 0.74 for a single pair to 0.90 for a 5-km stack. The gain flattens beyond about 2 km.</p>
+  </section>
+  <figure>
+    <img src="figs/convergence.png" alt="Median correlation coefficient with the reference versus stack length, for coda and direct windows, by cable and band">
+    <figcaption>Median CC with the reference against stack length. The direct window crosses 0.8 within 10–30 min. The late coda stays below 0.5.</figcaption>
+  </figure>
+  <div class="tbl">
+    <table>
+      <thead><tr><th>60-min stacks, 5-km bins</th><th class="num">Late coda</th><th class="num">Early coda</th><th class="num">SVD rank 3</th><th class="num">Offset-stacked coda</th></tr></thead>
+      <tbody>
+        <tr><td>North 0.12–0.3 Hz</td><td class="num">0.25</td><td class="num">0.90</td><td class="num">0.36</td><td class="num">0.13</td></tr>
+        <tr><td>North 0.3–0.7 Hz</td><td class="num">0.30</td><td class="num">0.84</td><td class="num">0.44</td><td class="num">0.17</td></tr>
+        <tr><td>South 0.12–0.3 Hz</td><td class="num">0.16</td><td class="num">0.80</td><td class="num">0.19</td><td class="num">0.11</td></tr>
+        <tr><td>South 0.3–0.7 Hz</td><td class="num">0.19</td><td class="num">0.65</td><td class="num">0.22</td><td class="num">0.10</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="col meta">Early coda = 1–2.5 × the slow direct-wave time (offset / 0.3 km/s, minimum 5 s). Late coda starts at max(15 s, 2 × that time).</p>
+
+  <section class="col">
+    <h2>dv/v precision and tides</h2>
+    <p>dv/v is measured by stretching each 30-min stack (moving in 10-min steps) against the all-January reference. Results are averaged over offsets and both lag sides, weighted by Weaver et al. (2011) errors, and then over each span. The vectorised stretching matches noisepy to within 10⁻⁵ on synthetics. A windowed cross-correlation method agrees with it at r = 0.5–0.7 on the coda windows but only 0.2–0.4 on the short early-coda window.</p>
+    <p>An even/odd null test splits each hour into interleaved 10-min halves and measures each half separately. It gives an empirical floor with no bias (median difference ≈ 0).</p>
+  </section>
+  <div class="tbl">
+    <table>
+      <thead><tr><th>North span, 0.3–0.7 Hz, early coda</th><th class="num">A1</th><th class="num">A2</th><th class="num">B3</th><th class="num">C3</th><th class="num">C4</th></tr></thead>
+      <tbody>
+        <tr><td>30-min floor, span average (%)</td><td class="num">0.04</td><td class="num">0.07</td><td class="num">0.07</td><td class="num">0.17</td><td class="num">0.08</td></tr>
+        <tr><td>Tide sensitivity, 2σ bound (10⁻⁴ / m)</td><td class="num">3.6</td><td class="num">2.8</td><td class="num">5.8</td><td class="num">7.4</td><td class="num">4.6</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="col">No tidal signal is detected. Of 142 regressions on the NOAA South Beach prediction, 9 have |z| &gt; 2, against about 6.5 expected by chance. Run-to-run offsets of ±0.2–0.4 % often differ in sign between bands, which points to changes in the noise sources rather than in velocity. There is no step at the Jan 21 acquisition change. The south-cable floors rest on only 9 null-test samples per span and are less reliable.</p>
+  <figure>
+    <img src="figs/dvv_timeseries_north.png" alt="Span-averaged dv/v time series for the north cable, by span and run, with tide">
+    <figcaption>North cable: span-averaged dv/v in 30-min stacks, 0.12–0.3 Hz (blue) and 0.3–0.7 Hz (red), with the NOAA tide in grey. Runs N00 (Jan 15–16, 9.4 h) and N02/N03 (Jan 26, about one tidal cycle apart) are the most diagnostic.</figcaption>
+  </figure>
+  <div class="two">
+    <figure>
+      <img src="figs/dvv_precision_map.png" alt="Null-test dv/v noise per 5-km bin along both cables">
+      <figcaption>Empirical 30-min precision per 5-km bin along both cables.</figcaption>
+    </figure>
+    <figure>
+      <img src="figs/dvv_timeseries_south.png" alt="Span-averaged dv/v time series for the south cable">
+      <figcaption>South cable, same format. Spans B2 and C3 have a single usable bin and are noisy.</figcaption>
+    </figure>
+  </div>
+
+  <section class="col">
+    <h2>Next step: the continuous archive</h2>
+    <ul>
+      <li>Process the 3.9 TB continuous record at <a href="http://piweb.ooirsn.uw.edu/das25">piweb.ooirsn.uw.edu/das25</a> in periods with constant acquisition settings. 211.7 m spacing runs from Jan 6 to Jan 28, and the sampling rate changes on Jan 13 and Jan 21.</li>
+      <li>Keep the first ~20–40 km past each repeater, 0.12–0.7 Hz, offsets of 0.4–3 km, and 2–5 km spatial stacks.</li>
+      <li>Day-long stacks should make the late coda usable. Treat direct-wave and early-coda dv/v as sensitive to changes in the noise sources.</li>
+      <li>If the noise is white, ~3 months of data would bring tidal sensitivity down to ~3–7 × 10⁻⁵ per m. That approaches plausible tidal-loading signals. This is a rough extrapolation.</li>
+    </ul>
+    <p class="meta">Reproduce: <code>./run_all.sh</code> (~10 min on 48 cores, env noisepy2), then the notebooks in <code>notebooks/</code>. Dataset: Zenodo 10.5281/zenodo.19930402; reader and geometry: github.com/uwfiberlab/OOI_DAS_2025.</p>
+  </section>
+</div>

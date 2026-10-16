@@ -1,0 +1,152 @@
+# Continuous 100-m-spacing stream (north-100m / south-100m raw binaries), Dec 23 2025 - Jan 28 2026.
+# Run any step with:  MSDVV_CONFIG=config_100m.yaml python scripts/<step>.py
+data_dirs:
+  - /data/wsd02/multispan_dvv/raw
+file_glob: "nokia_DAS_*-100m_8Hz_*"
+# Jan 13-21 was recorded at 3.73 Hz (internal decimation D=128 instead of 256; gauge, dx, mask unchanged):
+# accepted and decimated x2 to target_fs, labelled by its setup string (D128) so steps can be checked.
+require: {dx: 105.85775068689657, fs: [1.8626451492309568, 3.7252902984619136]}
+target_fs: 1.8626451492309568
+date_range: ["2025-12-23", "2026-01-28"]
+output_dir: /data/wsd02/multispan_dvv/outputs_100m
+resources_dir: /home/seismic/Multispan_DV/resources
+
+download:
+  streams: [north-100m, south-100m]
+  parallel: 4
+
+geometry:
+  edge_pad: 6            # channels (~0.6 km) around joins / repeaters
+  repeater_search_km: 8
+
+noise:
+  win_s: 60
+  psd_seg_s: 600
+  max_offset_coh: 20
+  reject_mad: 5.0
+  n_files_per_cable: 24  # PSD/coherence from a spread sample of files
+
+xcorr:
+  win_s: 240
+  step_s: 120
+  maxlag_s: 90
+  nfft: 1024             # >= 2 x 447-sample windows at 1.86 Hz
+  prefilt: [0.08, 0.85]  # Nyquist 0.93 Hz
+  substack_s: 3600       # 1-h substacks (storage)
+  k_min: 2               # 0.21 km
+  k_max: 30              # 3.2 km
+  k_step: 2              # same offsets in km as the pilot (0.42 km steps)
+  good_pairs_only: true  # zero pairs with a bad channel (needs s05 first)
+  n_jobs: 12
+  remove_common_mode: false
+  whiten_taper_hz: 0.03
+  bands:
+    b1: [0.12, 0.30]
+    b2: [0.30, 0.70]
+
+quality:
+  band: [0.12, 0.60]
+  k: 4                   # 0.42 km, the pilot's calibrated offset
+  coh_min: 0.15
+
+convergence:
+  ref_exclude: segment            # reference = all data except the tested segment
+  T_subs: [1, 3, 6, 12, 24, 48, 96, 168]   # hours (up to one week)
+  print_T_min: [360, 1440, 10080]
+  pair_subsample: 4               # pair level: every 4th good source channel (memory)
+  fix_T_subs: 24
+  n_jobs: 8
+
+dvv:
+  dv_range: 0.01
+  nbtrial: 101
+  coda_start_mult: 2.0
+  min_coda_s: {b1: 15.0, b2: 10.0}
+  coda_end_s: {b1: 80.0, b2: 60.0}
+  v_direct: 0.3
+  v_fast: 3.0
+  direct_min_s: 1.0
+  t_direct_min_s: 5.0
+  early_coda_mult: 2.5
+  windows: [direct, early, coda]
+  primary_window: coda           # day-scale stacks: test whether the late coda becomes usable
+  stack_subs: 6                  # 6-h stacks ...
+  step_subs: 1                   # ... moving by 1 h
+  levels: [2km, 5km]
+  wcc_level: 5km
+  cc_min: 0.5
+  bin_km: [1, 2, 5]
+  dvv_substack_min: 360
+  merge_runs: true               # one continuous hourly series per cable
+  n_chunks: 6
+  n_jobs: 24
+  n_jobs_ref: 4
+
+tides:
+  noaa_station: "9435380"
+
+# Inter-span (cross-feature) bin-to-bin correlations, south cable (s20-s22)
+interspan:
+  cable: south
+  bin_km: 1.0
+  min_good: 3
+  min_km: 5.0
+  features_geojson: resources/qfaults_oregon_margin_strikeslip.geojson
+  points: {SHR: [44.569, -125.148, 5.0]}   # Southern Hydrate Ridge summit (approx.), radius km
+  win_s: 600
+  step_s: 300
+  maxlag_s: 200
+  nfft: 2048
+  prefilt: [0.08, 0.85]
+  whiten_taper_hz: 0.03
+  substack_s: 3600
+  bands:
+    b1: [0.12, 0.30]
+    b2: [0.30, 0.70]
+  n_jobs: 8
+
+# Improved inter-span run (v2): common-mode removal, lower band, tonal-bin rejection, weekly stacks
+interspan_v2:
+  out_subdir: interspan_v2
+  remove_common_mode: true
+  prefilt: [0.04, 0.85]
+  bands:
+    b0: [0.06, 0.15]
+    b1: [0.12, 0.30]
+    b2: [0.30, 0.70]
+  stacks_h: [[24, 6], [168, 24]]   # (stack length, step) in hours
+  tonal_peakiness_factor: 3.0      # bins whose pairs' long-term spectra are this much peakier than typical are dropped
+
+# v3: like v1 (no common-mode subtraction, which injects a zero-lag term) plus the low band; used for the
+# stable across-feature dv/v time series (s23)
+interspan_v3:
+  out_subdir: interspan_v3
+  remove_common_mode: false
+  prefilt: [0.04, 0.85]
+  bands:
+    b0: [0.06, 0.15]
+    b1: [0.12, 0.30]
+  exclude_segs: [C3]               # 2-bin sliver before repeater 3: tonal
+  stacks_h: [[24, 1], [168, 6]]   # back-stacked; daily stepping 1 h (matches within-span), weekly stepping 6 h
+
+# v4_ram: v3 with running-absolute-mean normalisation (20 s) instead of one-bit (the change that helped the
+# seismometer-DAS CC most, README "Raising the seismometer-DAS CC"); analysed by s43 (coda after per-pair ballistic picks)
+interspan_v4_ram:
+  out_subdir: interspan_v4_ram
+  remove_common_mode: false
+  normalisation: ram
+  ram_s: 20.0
+  prefilt: [0.04, 0.85]
+  bands:
+    b0: [0.06, 0.15]
+    b1: [0.12, 0.30]
+  exclude_segs: [C3]
+  stacks_h: [[24, 1], [168, 6]]
+
+# 24-h stacks moving 1 h (stable daily dv/v, hourly sampling). Use: MSDVV_DVV=dvv_24h
+dvv_24h:
+  out_subdir: dvv_24h
+  stack_subs: 24
+  step_subs: 1
+
+storms: ["2025-12-25 12:00", "2026-01-03 06:00", "2026-01-08 06:00"]   # storm onsets (NDBC Hs rises)

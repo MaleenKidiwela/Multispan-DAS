@@ -1,0 +1,65 @@
+# Pilot dv/v on the OOI RCA Nokia multispan DAS (January 2026)
+data_dirs:
+  - /data/whd02/arose_data/multispan_8hz
+  - /data/whd02/arose_data/multispan_8hz/filtered_invest
+date_range: ["2026-01-01", "2026-01-31"]   # January only (consistent acquisition geometry)
+output_dir: /home/seismic/Multispan_DV/outputs
+resources_dir: /home/seismic/Multispan_DV/resources
+
+geometry:
+  edge_pad: 3            # channels discarded on each side of a mask-block join / repeater
+  repeater_search_km: 8  # search half-width around the route-predicted repeater position
+
+noise:
+  win_s: 60              # PSD / coherence segment length
+  psd_seg_s: 600
+  max_offset_coh: 20     # channels, for coherence-vs-offset
+  reject_mad: 5.0        # reject windows whose RMS exceeds median + reject_mad * MAD
+
+xcorr:
+  win_s: 240             # correlation window (needs to be >> maxlag)
+  step_s: 120            # 50 % overlap
+  maxlag_s: 90
+  nfft: 4096             # >= 2 * window samples (linear correlation)
+  prefilt: [0.08, 1.0]   # broadband bandpass before one-bit normalisation
+  substack_s: 600        # store 10-min substacks (as cross-spectra)
+  k_min: 2               # minimum channel offset (k=1 gauges abut: gauge ~209 m vs dx 212 m)
+  k_max: 15              # ~3.2 km
+  remove_common_mode: false   # noise analysis: negligible effect on coherence
+  whiten_taper_hz: 0.03
+  bands:                 # Hz; >0.7 Hz is incoherent even at 0.2 km offset (noise floor)
+    b1: [0.12, 0.30]     # secondary microseism peak
+    b2: [0.30, 0.70]     # Scholte / seafloor surface waves
+
+quality:
+  band: [0.12, 0.60]
+  k: 2
+  coh_min: 0.15          # median magnitude-squared coherence at k=2; reproduces readme good/bad segments
+
+dvv:
+  dv_range: 0.01         # +-1 %
+  nbtrial: 101
+  coda_start_mult: 2.0   # coda starts at this multiple of the direct-wave time (or min_coda_s)
+  min_coda_s:            # per band
+    b1: 15.0
+    b2: 10.0
+  coda_end_s:
+    b1: 80.0
+    b2: 60.0
+  v_direct: 0.3          # km/s, slow bound (shelf Scholte waves ~0.3 km/s in f-k)
+  v_fast: 3.0            # km/s, fastest plausible direct arrival (direct window start)
+  direct_min_s: 1.0      # direct window never starts before this lag (avoid zero-lag artefacts)
+  t_direct_min_s: 5.0    # minimum slow-direct-wave time t_d
+  early_coda_mult: 2.5   # early coda = [t_d, 2.5 t_d]  (converges: CC~0.8-0.9 at 60 min, s08b)
+  windows: [direct, early, coda]
+  primary_window: early
+  stack_subs: 3          # dv/v from 30-min stacks (3 x 10-min substacks) ...
+  step_subs: 1           # ... moving by 10 min
+  levels: [2km, 5km]
+  wcc_level: 5km         # independent second method computed at this level
+  cc_min: 0.5
+  bin_km: [1, 2, 5]
+  dvv_substack_min: 30
+
+tides:
+  noaa_station: "9435380"  # South Beach (Newport), OR

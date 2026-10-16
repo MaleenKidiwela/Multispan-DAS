@@ -1,0 +1,128 @@
+# 1-2 Hz analysis on the fine-spacing 8 Hz stream, Dec 23 2025 - Jan 5 2026 (streamed: download -> correlate -> delete).
+# Dec 23-29: 13.2 m channels, 13 m gauge  -> spatially low-passed + decimated x2 to the 26.46 m grid
+# Dec 30-Jan 5: 26.46 m channels, 26 m gauge (native). Setup strings differ (D8 vs D16): check for a step at Dec 30.
+# Run:  MSDVV_CONFIG=config_hf.yaml python scripts/<step>.py
+data_dirs:
+  - /data/wsd02/multispan_dvv/raw_hf/sample     # small spread sample kept for geometry / noise / quality
+file_glob: "nokia_DAS_[ns]*th_8Hz_*"            # north_8Hz / south_8Hz (not the -100m stream)
+require: {dx: [13.23221883586207, 26.46443767172414], fs: 7.450580596923827}
+date_range: ["2025-12-23", "2026-01-05"]
+output_dir: /data/wsd02/multispan_dvv/outputs_hf
+resources_dir: /home/seismic/Multispan_DV/resources
+
+spatial:
+  target_dx: 26.46443767172414
+  k_lowpass: 18.0        # 1/km; spatial anti-alias for the 26.46 m grid (Nyquist 18.9/km)
+  k_notch: [12.0]        # instrument stripe (83 m period); stripes at 24 and 36/km are removed by the low-pass
+  notch_w: 0.6
+
+download:
+  streams: [north, south]
+  parallel: 6
+  sample_every_h: 12     # keep one file per cable every ~12 h for noise/quality
+  batch_files: 36
+
+geometry:
+  edge_pad: 25           # channels (~0.65 km) around joins / repeaters
+  repeater_search_km: 8
+  # automatic picks are unreliable at 26 m spacing (south); use the 100-m-stream picks (same optical distances)
+  repeater_opt_km:
+    north: [67.219672, 172.124703, 277.029734]
+    south: [98.130135, 205.999183, 257.975338]
+
+noise:
+  win_s: 60
+  psd_seg_s: 600
+  max_offset_coh: 20
+  reject_mad: 5.0
+  n_files_per_cable: 28
+
+xcorr:
+  win_s: 120
+  step_s: 60
+  maxlag_s: 30
+  nfft: 2048
+  prefilt: [0.8, 2.4]
+  substack_s: 3600
+  k_min: 2               # 53 m
+  k_max: 20              # 529 m
+  k_step: 2
+  good_pairs_only: true
+  n_jobs: 12
+  remove_common_mode: false
+  whiten_taper_hz: 0.1
+  bands:
+    b3: [1.0, 2.0]
+
+quality:
+  band: [1.0, 2.0]
+  k: 2                   # 53 m
+  coh_min: 0.10          # noise-floor coherence for ~14-23 one-minute segments is ~0.04-0.07
+
+convergence:
+  ref_exclude: segment
+  T_subs: [1, 3, 6, 12, 24, 48, 96, 168]
+  print_T_min: [360, 1440, 10080]
+  pair_subsample: 8
+  n_jobs: 6
+
+dvv:
+  dv_range: 0.01
+  nbtrial: 101
+  coda_start_mult: 2.0
+  min_coda_s: {b3: 6.0}
+  coda_end_s: {b3: 25.0}
+  v_direct: 0.1          # km/s: slope Scholte waves at 1-2 Hz reach ~0.1 km/s (f-k, 13 m test)
+  v_fast: 1.5
+  direct_min_s: 0.3
+  t_direct_min_s: 2.0
+  early_coda_mult: 2.5
+  windows: [direct, early, coda]
+  primary_window: coda
+  stack_subs: 6
+  step_subs: 1
+  levels: [1km, 2km]
+  wcc_level: 2km
+  cc_min: 0.5
+  bin_km: [0.5, 1, 2]
+  merge_runs: true
+  n_chunks: 6
+  n_jobs: 24
+  n_jobs_ref: 2
+
+profile:                 # s12 surface-wave velocity
+  level: 1km
+  k_min_km: 0.1
+
+tides:
+  noaa_station: "9435380"
+
+storms: ["2025-12-25 12:00", "2026-01-03 06:00"]   # onsets of the Hs ~3.5-4 m storms in this period (NDBC 46050/46089)
+
+# 24-h stacks moving 1 h, back-stacked (stable daily dv/v). Use: MSDVV_DVV=dvv_24h
+dvv_24h:
+  out_subdir: dvv_24h
+  stack_subs: 24
+  step_subs: 1
+
+# Inter-span (cross-feature) bin-to-bin correlations at 1-2 Hz, south cable (streamed: d03_stream_interspan.py)
+interspan:
+  cable: south
+  out_subdir: interspan
+  bin_km: 1.0
+  min_good: 3
+  min_km: 5.0
+  features_geojson: resources/qfaults_oregon_margin_strikeslip.geojson
+  points: {SHR: [44.569, -125.148, 5.0]}
+  win_s: 300
+  step_s: 150
+  maxlag_s: 150
+  nfft: 4096
+  prefilt: [0.8, 2.4]
+  whiten_taper_hz: 0.1
+  substack_s: 3600
+  remove_common_mode: false
+  bands:
+    b3: [1.0, 2.0]
+  exclude_segs: []
+  stacks_h: [[24, 1]]
